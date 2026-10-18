@@ -1,15 +1,20 @@
+-- ------------------------------------------------------------
+-- 1. Общая воронка: total_orders, cancel_orders, cancel_rate
+-- ------------------------------------------------------------
+select 
+    count(distinct order_id) filter (where action = 'create_order') as total_orders,
+    count(distinct order_id) filter (where action = 'cancel_order') as cancel_orders,
+    count(distinct order_id) filter (where action = 'cancel_order')::numeric / count(distinct order_id) filter (where action = 'create_order')::numeric * 100 as cancel_rate
+from user_actions
 
 
-
-
-
-
-### 4.2
-
+-- ------------------------------------------------------------
+-- 2. Отмены по дням (день = день СОЗДАНИЯ заказа)
+-- ------------------------------------------------------------
 with creates as (
     select 
         order_id,
-        MIN(time) as created_at
+        min(time) as created_at
     from user_actions 
     where action = 'create_order' 
     group by order_id
