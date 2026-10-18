@@ -66,7 +66,34 @@ order by hours
 -- ------------------------------------------------------------
 -- 4. Время до отмены
 -- ------------------------------------------------------------
-SELECT ...
+with creates as (
+    select 
+        order_id,
+        min(time) as create_time
+    from user_actions
+    where action = 'create_order'
+    group by order_id
+),
+cancels as (
+    select
+        order_id,
+        max(time) as cancel_time
+    from user_actions
+    where action = 'cancel_order'
+    group by order_id
+),
+
+t1 as (
+    select 
+        extract(epoch from cancel_time - create_time) as created_at
+    from cancels left join creates using(order_id)
+)
+SELECT
+    min(created_at) as min_sec,
+    percentile_cont(0.5) within group (order by created_at) as median_sec,
+    avg(created_at) as avg_sec,
+    max(created_at) as max_sec
+FROM t1;
 
 -- ------------------------------------------------------------
 -- 5. Сегментация: пол и возраст
