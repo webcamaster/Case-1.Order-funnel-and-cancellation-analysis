@@ -88,14 +88,67 @@ t1 as (
         extract(epoch from cancel_time - create_time) as created_at
     from cancels left join creates using(order_id)
 )
-SELECT
+select
     min(created_at) as min_sec,
     percentile_cont(0.5) within group (order by created_at) as median_sec,
     avg(created_at) as avg_sec,
     max(created_at) as max_sec
-FROM t1;
+from t1;
+
 
 -- ------------------------------------------------------------
 -- 5. Сегментация: пол и возраст
 -- ------------------------------------------------------------
-SELECT ...
+with creates as (
+    select 
+        user_id,
+        order_id,
+        min(time) as create_time
+    from user_actions
+    where action = 'create_order'
+    group by order_id, user_id
+),
+cancels as (
+    select
+        order_id,
+        max(time) as cancel_time
+    from user_actions
+    where action = 'cancel_order'
+    group by order_id
+),
+
+
+t1 as (
+    select 
+        user_id,
+        order_id,
+        cancel_time,
+        create_time
+    from creates 
+    left join cancels using(order_id)
+)
+select 
+    case 
+        when birth_date is null then 'unknown'
+        when (2022 - extract(year from birth_date)) < 25 then '<25'
+        when (2022 - extract(year from birth_date)) < 35 then '25-34'
+        when (2022 - extract(year from birth_date)) < 45 then '35-44'
+        else '45+'
+    end as age_group,
+    sex,
+    count(*)                                              AS create_orders,
+    count(t1.cancel_time)                                 AS cancel_orders,
+    round(count(t1.cancel_time)::numeric / count(*) * 100, 2) AS cancel_rate
+from t1 
+left join users on users.user_id = t1.user_id
+group by 
+    case 
+        when birth_date is null then 'unknown'
+        when (2022 - extract(year from birth_date)) < 25 then '<25'
+        when (2022 - extract(year from birth_date)) < 35 then '25-34'
+        when (2022 - extract(year from birth_date)) < 45 then '35-44'
+        else '45+'
+    end,
+    users.sex
+
+
