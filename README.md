@@ -279,4 +279,4 @@ cancel rate — сигнал, что отмены сместились в дор
 
 ## 8. SQL-запросы
 
-Все запросы — в [`queries.sql`](./queries.sql).
+Все запросы — в [`queries.sql`](./queries.sql), за исключением пункта 6.6, он выполнен на python — [`revenue_analysis.sql`](./revenue_analysis.sql).
